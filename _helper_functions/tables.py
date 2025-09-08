@@ -168,10 +168,8 @@ def get_table_by_template(user_inputs, template_file_name="gear_template.json"):
             
             # loop through analyses to find match...
             for analysis in analyses:
-                print(analysis.label)
                 if not analysis.job:
                     continue
-                print(table.loc[idx, g_label])
                 if analysis.job.state == "complete":
                     if "/" in g:   ## this is a gear + version
                         if (analysis.gear_info.name == gear_name.split("/")[0]) and (analysis.gear_info.version == gear_name.split("/")[1]) and (g_label in analysis.label):

@@ -14,7 +14,7 @@ log = logging.getLogger('main')
 
 try:
     absolute_path = os.path.abspath(__file__)
-    sys.path.insert(0, Path(absolute_path).parts[0:-2])
+    sys.path.insert(0, Path().joinpath(*Path(absolute_path).parts[0:-2]).as_posix())
 except NameError:
     sys.path.insert(0, os.path.dirname(os.getcwd()))
 

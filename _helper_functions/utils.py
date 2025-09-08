@@ -96,7 +96,7 @@ def searchfiles(path, dryrun=False, find_first=False):
             files = files[0]
 
         return files
-
+    
 
 def replace_line(filename, pattern, repl):
     """
@@ -154,4 +154,26 @@ def create_file(filename):
         print("File created successfully.")
     except FileExistsError:
         print("File already exists.")
+        
 
+def set_compute_vars():
+    alpine_queue={"qos":"normal","partition":"amilan","account":"ucb-general"}
+    blanca_queue={"qos":"blanca-ics","partition":"blanca-ics","account":"blanca-ics"}
+    
+    if "bnode" in os.environ["HOSTNAME"]:
+        return blanca_queue
+    else:
+        return alpine_queue
+    
+    
+def shell(cmd, workdir=None):
+    terminal = sp.Popen(
+            cmd, shell=True, stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True, cwd=workdir
+        )
+    stdout, stderr = terminal.communicate()
+    log.debug("\n %s", stdout)
+    log.debug("\n %s", stderr)
+
+    output = stdout.strip("\n").split("\n")
+
+    return output

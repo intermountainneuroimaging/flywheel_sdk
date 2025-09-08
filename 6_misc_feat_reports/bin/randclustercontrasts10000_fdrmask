@@ -53,7 +53,8 @@ mkdir -p $gsum/clusters_icbm
 mkdir -p $gsum/clusters_icbm_atlasq
 for c in cope*.feat; do
     contrast=`cat report_stats.html | grep $c | cut -d '(' -f2 | cut -d ')' -f1 | sed -e 's|[() ]|_|g' -e 's|>|-|g' -e 's|<|-lt-|g' -e 's|&|+|g' `
-    statname=( `grep ContrastName design.con | cut -f2 | tr -d ' '` )
+    statname=( $(grep ContrastName design.con | cut -f2 | tr -d ' ' | sed -e 's|[() ]|_|g' -e 's|>|-|g' -e 's|<|-lt-|g' -e 's|&|+|g') )
+
     statno=`grep ContrastName design.con | cut -f1 | cut -c14-`
     for i in $statno; do
         let j="$i-1"

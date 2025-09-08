@@ -84,11 +84,14 @@ fi
 
 [ $e ] && usage
 
+cwd=`dirname $0`
+
 # retrieve label
 if [ ! "$ATLAS" ]; then
 
     # run python version of TD labels
-    tdoutput=`ras2label.py ${COORDINATES} TD`
+    #tdoutput=`ras2label.py ${COORDINATES} TD`
+    tdoutput=`grep -e "^${COORDINATES}" $cwd/Talairach.txt | cut -d" " -f4-`
     # parse into desired fields
     fields="$(echo $tdoutput | awk -F'.' 'BEGIN {RS="%"} /Brodmann/ {print $1";" $3";" $5; exit}' | sed 's|*|_|g')"
 
@@ -96,16 +99,18 @@ if [ ! "$ATLAS" ]; then
     lobe="$(echo $tdoutput | cut -d. -f2 | tr ' ' _)"
     region="$(echo $tdoutput | cut -d. -f3 | tr ' ' _)"
     tissuetype="$(echo $tdoutput | cut -d. -f4 | tr ' ' _)"
-    BArea="$(echo $tdoutput | cut -d. -f5 | cut -d" " -f3)"    
+    BArea="$(echo $tdoutput | cut -d. -f5 | cut -d" " -f3 | cut -d"*" -f1)"  
 
 
     # return output
     [ $region ] && echo "$region `[ $hemisphere ] && echo $hemisphere` `[ $BArea ] && echo BA$BArea`" || exit 9
 else
     if [[ "$ATLAS" == "Harvard-Oxford Cortical Structural Atlas" ]] ; then
-        label=`ras2label.py ${COORDINATES} HO_cort`;
+        #label=`ras2label.py ${COORDINATES} HO_cort`;
+        label=`grep -e "^${COORDINATES}" $cwd/HarvardOxford-Cortical.txt | cut -d" " -f4-`
     elif [[ "$ATLAS" == "Harvard-Oxford Subcortical Structural Atlas" ]] ; then
-        label=`ras2label.py ${COORDINATES} HO_sub`;
+        #label=`ras2label.py ${COORDINATES} HO_sub`;
+        label=`grep -e "^${COORDINATES}" $cwd/HarvardOxford-Subcortical.txt | cut -d" " -f4-`
     fi
     echo $label
     

@@ -292,7 +292,7 @@ def get_container_type(cid):
     return fw.get_container(cid).container_type
 
 
-def run_auto_gear(session_id, template_file_name = "gears_template_JSON.txt"):
+def run_auto_gear(session_id, template_file_name = "gears_template_JSON.txt", ignore_checks=False, stage=None):
     
     # check id passed is a session id, if not abort
     if get_container_type(session_id) != 'session':
@@ -311,6 +311,10 @@ def run_auto_gear(session_id, template_file_name = "gears_template_JSON.txt"):
     # run each analysis...based on conditions in template
     for itr, json in enumerate(template["analysis"]):
         
+        # if a specific stage is passed, respect running only that stage (index starting at 1).
+        if stage and stage != itr+1:
+            continue
+        
         # pull session and project info at the beggining of each gear call in case changes have occured
         full_session=fw.get_session(session_id)
 
@@ -326,7 +330,7 @@ def run_auto_gear(session_id, template_file_name = "gears_template_JSON.txt"):
         # ------------------------------- #
         
         # 1. check for exisiting analyses...
-        if not my_checks(full_session, json):
+        if not my_checks(full_session, json) and not ignore_checks:
             continue
         
         # ------------------------------- #
@@ -351,4 +355,102 @@ def run_auto_gear(session_id, template_file_name = "gears_template_JSON.txt"):
                                       
     return
                                       
+    
+## ------------------------------------------------ ##
+##              Auto Download Analyses              ##
+## ------------------------------------------------ ##
+from _helper_functions import fileIO, utils
+import tempfile
+
+# custom functions
+def download_analysis(download_path, analysis_id):
+    # download analysis directly from gear table...
+    record_file = os.path.join(download_path,".downloadRecord.txt")
+    if not os.path.exists(record_file):
+        utils.create_file(record_file)
+
+    # look for analysis id in download record
+    if utils.locate_by_pattern(record_file, analysis_id):
+        log.info("analysis already downloaded: %s", str(analysis_id))
+        return
+
+    # download new analyses
+    fileIO.download_session_analyses_byid(analysis_id,download_path)
+
+    # update download record
+    with open(record_file, "a") as file:
+        file.write(analysis_id+"\n")
+
+    return
+
+
+def run_auto_download(session_id, template_file_name="gears_template.json"):
+    
+    # check id passed is a session id, if not abort
+    if not fw.get_session(session_id):
+        log.info("Flywheel Container %s is a %s... not session. Skipping", session_id, get_container_type(session_id))
+        return
+    
+    full_session=fw.get_session(session_id)
+    project = fw.get_project(full_session["parents"]["project"])
+         
+    template_file = project.get_file(template_file_name)
+    if not template_file:
+        log.info(f"{template_file_name} not found within project: {project.label}. Skipping...")
+        return
+    template = read_file_to_memory(template_file)
+    
+    #  Download completed analyses
+    gears_dict = {}
+    for itr, itr_template in enumerate(template["analysis"]):
         
+        download_list = []
+        
+        # check if we should download...
+        if "download-locally" not in itr_template or itr_template["download-locally"] != True:
+            continue
+        
+        # analysis information...
+        my_gear_name=itr_template["gear-name"]+"/"+itr_template["gear-version"] if "gear-version" in itr_template else itr_template["gear-name"]
+        my_gear_label = itr_template["custom-label"] if "custom-label" in itr_template else itr_template["gear-name"]
+        
+        # look for complete analysis
+        analyses = full_session.analyses
+            
+        # loop through analyses to find match...
+        for anlys in analyses:
+            if not anlys.job:
+                continue
+            if anlys.job.state == "complete":
+                if "/" in my_gear_name:   ## this is a gear + version
+                    if (anlys.gear_info.name == my_gear_name.split("/")[0]) and (anlys.gear_info.version == my_gear_name.split("/")[1]) and (my_gear_label in anlys.label):
+                        download_list.append(anlys.id)
+                else:
+                    if (anlys.gear_info.name == my_gear_name) and (my_gear_label in anlys.label):
+                        download_list.append(anlys.id)
+        
+        # Get download path and check it exists...
+        dpath = itr_template["download-path"]
+        if not os.path.exists(dpath) and not os.path.exists(os.path.dirname(dpath)):
+            log.warning('Unable to locate download path: %s', str(dpath))
+            continue
+            
+        os.makedirs(dpath, exist_ok = True)
+        
+        # download analyses in list
+        for aid in download_list:
+            download_analysis(dpath, aid)
+            
+        # run any custom local scripts 
+        
+        if "custom-download-script" in itr_template and download_list:
+            file_obj = project.get_file(itr_template["custom-download-script"])
+            with tempfile.TemporaryDirectory(dir=dpath) as tempdir:
+                script_file = os.path.join(tempdir,file_obj.name)
+                # download zip
+                file_obj.download(script_file)
+                output = utils.shell(f"bash {script_file}", workdir=tempdir)
+                print(output)
+            
+    # thats all!
+    return

@@ -224,6 +224,7 @@ if [ `fsfinfo -t $SOURCE` -eq 2 ]; then
 		l=`fsfinfo -i $SOURCE | head -1 | sed 's|.*cope\([0-9]*\)\.feat|\1|'`
 		i=`echo $map | sed 's|.*cope\([0-9]*\)\.feat.*|\1|'`
 		h=`echo $map | sed 's|.*tstat\([0-9]*\)\.nii\.gz|\1|'`
+        echo "$l:$i:$h"
 		cp -p $map $OUTD/randomise/${lname[l]}_`basename $map`
 	    else
 		l=`echo $map | sed 's|.*cope\([0-9]*\)\.feat.*|\1|'`

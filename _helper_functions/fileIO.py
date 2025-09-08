@@ -93,6 +93,7 @@ def download_session_analyses_byid(analysis_id, download_path):
     full_session = fw.get_container(analysis["parents"]["session"])
 
     if analysis:
+        log.info('Using download path: %s', str(download_path))
         for fl in analysis.files:
             if '.zip' in fl['name']:
                 download_and_unzip_inputs(analysis, fl, download_path)

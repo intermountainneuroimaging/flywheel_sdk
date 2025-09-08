@@ -1,6 +1,7 @@
 import os
 import flywheel
 import logging
+import sys
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 log = logging.getLogger('main')
 
@@ -13,6 +14,9 @@ try:
 except NameError:
     sys.path.insert(0, os.path.dirname(os.getcwd()))
 from _helper_functions import gears
+
+from _helper_functions import fileIO, utils
+
 
 # set default permissions
 os.umask(0o002);
@@ -35,7 +39,10 @@ if __name__ == "__main__":
         log.info("checking workflow: %s/%s/%s",fw.get_project(fw.get_session(sid).parents["project"]).label, fw.get_session(sid).subject.label, fw.get_session(sid).label)
 
         try:
-            gears.run_auto_gear(sid)
+            gears.run_auto_gear(sid, template_file_name="gears_template1.json")
         except Exception as e:
             log.warning(e)
+            
+
+
     
